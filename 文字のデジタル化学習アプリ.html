@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>文字のデジタル化学習アプリ</title>
+  <style>
+    /* ===== Global Styles ===== */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      margin-top: 40px;
+      font-size: 2rem;
+      color: #222;
+    }
+    main {
+      width: 90%;
+      max-width: 600px;
+      margin: 20px auto 60px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 24px;
+    }
+    /* ===== Mode Toggle ===== */
+    .mode-toggle {
+      display: flex;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .mode-toggle button {
+      flex: 1;
+      padding: 12px 0;
+      background: #fafafa;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      color: #555;
+    }
+    .mode-toggle button.active {
+      background: #4a90e2;
+      color: #fff;
+    }
+    .mode-toggle button:not(.active):hover {
+      background: #f0f0f0;
+    }
+    /* ===== Input Section ===== */
+    .input-section {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .input-section input {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 1rem;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      transition: border-color 0.2s;
+    }
+    .input-section input:focus {
+      border-color: #4a90e2;
+      outline: none;
+    }
+    .input-section button {
+      padding: 10px 16px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      background: #4a90e2;
+      color: #fff;
+    }
+    .input-section button:hover {
+      background: #407fcf;
+    }
+    .input-section button.delete-btn {
+      background: #e94e4e;
+    }
+    .input-section button.delete-btn:hover {
+      background: #d43e3e;
+    }
+    .input-section button.clear-btn {
+      background: #888;
+      margin-left: 4px;
+    }
+    .input-section button.clear-btn:hover {
+      background: #666;
+    }
+    /* ===== Display Area ===== */
+    .display-area {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      line-height: 1.6;
+    }
+    .display-area .display-row {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+      font-size: 1rem;
+    }
+    .display-area .display-row strong {
+      width: 100px;
+      color: #333;
+    }
+    .display-area .display-row .value {
+      font-family: 'Courier New', monospace;
+      background: #fff;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      color: #111;
+      word-break: break-all;
+      flex: 1;
+    }
+    /* 大きめに強調表示 */
+    .display-area .char-display {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #2a2a2a;
+      margin-left: 4px;
+    }
+    /* コピー ボタン */
+    .copy-btn {
+      margin-left: 8px;
+      font-size: 0.9rem;
+      padding: 4px 8px;
+      background: #e0e0e0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #555;
+      transition: background-color 0.2s;
+    }
+    .copy-btn:hover {
+      background: #d0d0d0;
+    }
+    /* ===== Hidden ===== */
+    .hidden {
+      display: none;
+    }
+    /* ===== Footer ===== */
+    footer {
+      margin-top: auto;
+      padding: 16px;
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <h1>文字のデジタル化学習アプリ</h1>
+  <main>
+    <!-- モード切替 -->
+    <div class="mode-toggle">
+      <button id="binaryBtn" class="active">2進数入力モード</button>
+      <button id="hexBtn">16進数入力モード</button>
+    </div>
+
+    <!-- 入力セクション -->
+    <div class="input-section">
+      <input type="text" id="codeInput" placeholder="例: 01000001" />
+      <button id="inputBtn">入力</button>
+      <button id="deleteBtn" class="delete-btn">1文字削除</button>
+      <button id="clearBtn" class="clear-btn">全削除</button>
+    </div>
+
+    <!-- 表示エリア -->
+    <div class="display-area">
+      <div class="display-row">
+        <strong>入力文字列:</strong>
+        <span id="charDisplay" class="char-display"></span>
+      </div>
+      <div class="display-row hidden" id="binaryRow">
+        <strong>2進数表示:</strong>
+        <span id="binaryDisplay" class="value"></span>
+        <button class="copy-btn" id="copyBinaryBtn">コピー</button>
+      </div>
+      <div class="display-row hidden" id="hexRow">
+        <strong>16進数表示:</strong>
+        <span id="hexDisplay" class="value"></span>
+        <button class="copy-btn" id="copyHexBtn">コピー</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>©2025 キムりん＠松本深志高校</footer>
+
+  <script>
+    // ===== Global Variables =====
+    let mode = 'binary';              // 'binary' または 'hex'
+    let charStr = '';                 // 入力された文字列
+    let binaryStr = '';               // 連結された2進数コード (8桁ずつ)
+    let hexStr = '';                  // 連結された16進数コード (2桁ずつ)
+
+    // DOM Elements
+    const binaryBtn = document.getElementById('binaryBtn');
+    const hexBtn    = document.getElementById('hexBtn');
+    const codeInput = document.getElementById('codeInput');
+    const inputBtn  = document.getElementById('inputBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const clearBtn  = document.getElementById('clearBtn');
+    const charDisplay   = document.getElementById('charDisplay');
+    const binaryDisplay = document.getElementById('binaryDisplay');
+    const hexDisplay    = document.getElementById('hexDisplay');
+    const copyBinaryBtn = document.getElementById('copyBinaryBtn');
+    const copyHexBtn    = document.getElementById('copyHexBtn');
+    const binaryRow = document.getElementById('binaryRow');
+    const hexRow = document.getElementById('hexRow');
+
+    // ===== モード切り替え処理 =====
+    binaryBtn.addEventListener('click', () => {
+      if (mode !== 'binary') {
+        mode = 'binary';
+        binaryBtn.classList.add('active');
+        hexBtn.classList.remove('active');
+        codeInput.value = '';
+        codeInput.placeholder = '例: 01000001';
+      }
+    });
+
+    hexBtn.addEventListener('click', () => {
+      if (mode !== 'hex') {
+        mode = 'hex';
+        hexBtn.classList.add('active');
+        binaryBtn.classList.remove('active');
+        codeInput.value = '';
+        codeInput.placeholder = '例: 41';
+      }
+    });
+
+    // ===== JIS X 0201 から文字を取得する関数 =====
+    function jisChar(code) {
+      // 制御文字領域（0x00～0x1F, 0x7F, 0x80～0xA0）は未定義
+      if ((code >= 0x00 && code <= 0x1F) || code === 0x7F ||
+          (code >= 0x80 && code <= 0xA0) || code > 0xDF) {
+        return null;
+      }
+      // 0x5C は 円記号
+      if (code === 0x5C) return '¥';
+      // 0x7E は オーバーライン (JIS X 0201)
+      if (code === 0x7E) return '‾';
+      // ASCII ベース (0x20 ～ 0x7E)
+      if (code >= 0x20 && code <= 0x7E) {
+        return String.fromCharCode(code);
+      }
+      // 半角カタカナ (0xA1 ～ 0xDF)
+      if (code >= 0xA1 && code <= 0xDF) {
+        return String.fromCharCode(0xFF61 + (code - 0xA1));
+      }
+      return null;
+    }
+
+    // ===== コードを入力して文字追加する =====
+    function addCharacter() {
+      const raw = codeInput.value.trim();
+      if (!raw) {
+        alert('文字コードを入力してください。');
+        return;
+      }
+      let processedRaw = raw;
+      const chunks = [];
+      let isValidFormat = true;
+
+      if (mode === 'binary') {
+        if (!/^[01]+$/.test(raw)) {
+          alert('2進数は0または1のみで入力してください。');
+          codeInput.value = '';
+          return;
+        }
+        if (raw.length < 8) {
+          processedRaw = raw.padStart(8, '0');
+        }
+        if (processedRaw.length % 8 !== 0) {
+          alert('2進数入力は8ビットごとに区切って入力してください。');
+          codeInput.value = '';
+          return;
+        }
+        for (let i = 0; i < processedRaw.length; i += 8) {
+          chunks.push(processedRaw.substring(i, i + 8));
+        }
+      } else {
+        if (!/^[0-9A-Fa-f]+$/.test(raw)) {
+          alert('16進数は0-9, A-Fのみで入力してください。');
+          codeInput.value = '';
+          return;
+        }
+        if (raw.length < 2) {
+          processedRaw = raw.padStart(2, '0');
+        }
+        if (processedRaw.length % 2 !== 0) {
+          alert('16進数入力は2桁ごとに区切って入力してください。');
+          codeInput.value = '';
+          return;
+        }
+        for (let i = 0; i < processedRaw.length; i += 2) {
+          chunks.push(processedRaw.substring(i, i + 2).toUpperCase());
+        }
+      }
+
+      chunks.forEach(chunk => {
+        const value = mode === 'binary' ? parseInt(chunk, 2) : parseInt(chunk, 16);
+        const char = jisChar(value);
+        if (char === null) {
+          alert('未定義の文字コードです: 0x' +
+                value.toString(16).toUpperCase().padStart(2, '0'));
+          isValidFormat = false;
+          return;
+        }
+        charStr += char;
+        binaryStr += (mode === 'binary' ? chunk : value.toString(2).padStart(8, '0'));
+        hexStr += (mode === 'hex' ? chunk : value
+                     .toString(16)
+                     .toUpperCase()
+                     .padStart(2, '0'));
+      });
+
+      if (!isValidFormat) {
+        codeInput.value = '';
+        return;
+      }
+      updateDisplay();
+      codeInput.value = '';
+      codeInput.focus();
+    }
+
+    // ===== 最後の文字を削除する =====
+    function deleteLastCharacter() {
+      if (charStr.length === 0) return;
+      charStr = charStr.slice(0, -1);
+      binaryStr = binaryStr.slice(0, -8);
+      hexStr = hexStr.slice(0, -2);
+      updateDisplay();
+      codeInput.focus();
+    }
+
+    // ===== 全ての文字を削除する =====
+    function clearAllCharacters() {
+      charStr = '';
+      binaryStr = '';
+      hexStr = '';
+      updateDisplay();
+      codeInput.focus();
+    }
+
+    // ===== 表示エリアを更新 =====
+    function updateDisplay() {
+      // 入力文字列
+      charDisplay.textContent = charStr;
+
+      // 2進数表示
+      if (binaryStr) {
+        binaryRow.classList.remove('hidden');
+        binaryDisplay.textContent = binaryStr;
+      } else {
+        binaryRow.classList.add('hidden');
+        binaryDisplay.textContent = '';
+      }
+
+      // 16進数表示
+      if (hexStr) {
+        hexRow.classList.remove('hidden');
+        hexDisplay.textContent = hexStr;
+      } else {
+        hexRow.classList.add('hidden');
+        hexDisplay.textContent = '';
+      }
+    }
+
+    // ===== クリップボードにコピー =====
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(() => {
+          fallbackCopyText(text);
+        });
+      } else {
+        fallbackCopyText(text);
+      }
+    }
+    function fallbackCopyText(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } catch {
+        alert('クリップボードにコピーできませんでした。');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // ===== イベントリスナーを登録 =====
+    inputBtn.addEventListener('click', addCharacter);
+    deleteBtn.addEventListener('click', deleteLastCharacter);
+    clearBtn.addEventListener('click', clearAllCharacters);
+    copyBinaryBtn.addEventListener('click', () => copyToClipboard(binaryStr));
+    copyHexBtn.addEventListener('click', () => copyToClipboard(hexStr));
+    codeInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addCharacter();
+    });
+
+    // ページロード時にフォーカス＆初期非表示
+    window.addEventListener('load', () => {
+      codeInput.focus();
+      binaryRow.classList.add('hidden');
+      hexRow.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
